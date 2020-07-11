@@ -118,6 +118,9 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
 
   final String id;
 
+  /// If this's loaded from a fallback asset
+  bool _isFallbackImage;
+
   @override
   Future<AdvancedNetworkImage> obtainKey(ImageConfiguration configuration) {
     return SynchronousFuture<AdvancedNetworkImage>(this);
@@ -149,7 +152,10 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
     final chunkEvents = StreamController<ImageChunkEvent>();
 
     return MultiFrameImageStreamCompleter(
-      codec: _loadAsync(key, decode, chunkEvents),
+      codec: _loadAsync(key, decode, chunkEvents).then((codec) {
+        PaintingBinding.instance.imageCache.evict(key);
+        return codec;
+      }),
       // chunkEvents: chunkEvents.stream, // TODO
       scale: key.scale,
       informationCollector: () sync* {
@@ -166,6 +172,7 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
   ) async {
     assert(key == this);
 
+    key._isFallbackImage = false;
     if (useDiskCache) {
       try {
         Uint8List _diskCache = await loadFromDiskCache();
@@ -208,6 +215,7 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
 
     if (key.loadFailedCallback != null) key.loadFailedCallback();
     if (key.fallbackAssetImage != null) {
+      key._isFallbackImage = true;
       ByteData imageData = await rootBundle.load(key.fallbackAssetImage);
       return decode(
         imageData.buffer.asUint8List(),
@@ -215,12 +223,14 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
         cacheHeight: key.height,
       );
     }
-    if (key.fallbackImage != null)
+    if (key.fallbackImage != null) {
+      key._isFallbackImage = true;
       return decode(
         key.fallbackImage,
         cacheWidth: key.width,
         cacheHeight: key.height,
       );
+    }
 
     return Future.error(StateError('Failed to load $url.'));
   }

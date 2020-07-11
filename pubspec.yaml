@@ -9,7 +9,7 @@ dependencies:
   http: ^0.12.1
   path_provider: ^1.6.11
   path: ^1.7.0
-  flutter_svg: ^0.18.0
+  flutter_svg: ^0.17.4
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +19,7 @@ dev_dependencies:
 environment:
   sdk: ">=2.3.0 <3.0.0"
   flutter: ">=1.10.0 <2.0.0"
+
+dependency_overrides:
+  path: ^1.7.0
+  # flutter_svg: ^0.17.4
